@@ -31,7 +31,7 @@ public class Crosshair {
      */
     public Crosshair() {
         group = new Group();
-        Circle dot = new Circle(0, 0, 1.5, Color.LIME);
+        Circle dot = new Circle(0, 0, 1.5, Color.WHITE);
         Line top = makeLine(0, -GAP, 0, -GAP - SIZE);
         Line bottom = makeLine(0, GAP, 0, GAP + SIZE);
         Line left = makeLine(-GAP, 0, -GAP - SIZE, 0);
@@ -51,7 +51,7 @@ public class Crosshair {
      */
     private Line makeLine(double x1, double y1, double x2, double y2) {
         Line line = new Line(x1, y1, x2, y2);
-        line.setStroke(Color.LIME);
+        line.setStroke(Color.WHITE);
         line.setStrokeWidth(THICKNESS);
         return line;
     }
