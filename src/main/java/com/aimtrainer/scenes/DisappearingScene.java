@@ -1,4 +1,4 @@
-package com.aimtrainer;
+package com.aimtrainer.scenes;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -17,6 +17,11 @@ import javafx.scene.shape.Arc;
 import javafx.scene.shape.ArcType;
 
 import java.util.Random;
+
+import com.aimtrainer.GameType;
+import com.aimtrainer.game.Crosshair;
+import com.aimtrainer.game.Target;
+import com.aimtrainer.ui.SceneManager;
 
 /**
  * DISAPPEARING — статичный шарик, исчезает через 2 секунды.
