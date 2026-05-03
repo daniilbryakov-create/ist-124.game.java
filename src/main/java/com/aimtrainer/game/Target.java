@@ -1,4 +1,4 @@
-package com.aimtrainer;
+package com.aimtrainer.game;
 
 import javafx.scene.Group;
 import javafx.scene.paint.Color;

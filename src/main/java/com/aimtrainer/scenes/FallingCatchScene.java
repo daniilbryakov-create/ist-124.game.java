@@ -1,4 +1,4 @@
-package com.aimtrainer;
+package com.aimtrainer.scenes;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -16,6 +16,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+import com.aimtrainer.GameType;
+import com.aimtrainer.game.Crosshair;
+import com.aimtrainer.game.Target;
+import com.aimtrainer.ui.SceneManager;
 
 /**
  * FALLING_CATCH — падающие шарики.

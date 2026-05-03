@@ -1,4 +1,4 @@
-package com.aimtrainer;
+package com.aimtrainer.scenes;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -14,6 +14,11 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import java.util.Random;
+
+import com.aimtrainer.GameType;
+import com.aimtrainer.game.Crosshair;
+import com.aimtrainer.game.Target;
+import com.aimtrainer.ui.SceneManager;
 
 /**
  * MOVING_HOLD — движущийся шарик.

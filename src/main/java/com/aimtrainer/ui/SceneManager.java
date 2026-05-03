@@ -1,4 +1,9 @@
-package com.aimtrainer;
+package com.aimtrainer.ui;
+
+import com.aimtrainer.GameType;
+import com.aimtrainer.scenes.DisappearingScene;
+import com.aimtrainer.scenes.FallingCatchScene;
+import com.aimtrainer.scenes.MovingHoldScene;
 
 import javafx.scene.Scene;
 import javafx.stage.Stage;

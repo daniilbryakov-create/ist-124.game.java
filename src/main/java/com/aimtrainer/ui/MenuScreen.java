@@ -1,4 +1,6 @@
-package com.aimtrainer;
+package com.aimtrainer.ui;
+
+import com.aimtrainer.GameType;
 
 import javafx.geometry.Pos;
 import javafx.scene.Parent;

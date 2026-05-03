@@ -1,10 +1,12 @@
 package com.aimtrainer;
 
+import com.aimtrainer.ui.SceneManager;
+
 import javafx.application.Application;
 import javafx.stage.Stage;
 
 /**
- * Точка входа в приложение.
+ * Точка входа в приложение и запуск самого JavaFX.
  * Запускает JavaFX и передаёт управление SceneManager.
  */
 public class Main extends Application {
