@@ -1,1 +1,11 @@
+com\aimtrainer\MovingHoldScene.class
+com\aimtrainer\DisappearingScene.class
+com\aimtrainer\DisappearingScene$1.class
+com\aimtrainer\FallingCatchScene$1.class
+com\aimtrainer\MovingHoldScene$1.class
+com\aimtrainer\Crosshair.class
+com\aimtrainer\SceneManager.class
+com\aimtrainer\Crosshair$BasketCrosshair.class
 com\aimtrainer\SceneManager$1.class
+com\aimtrainer\FallingCatchScene.class
+com\aimtrainer\MenuScreen.class
