@@ -75,15 +75,21 @@ public class DisappearingScene {
         arena.setPrefSize(WIDTH, HEIGHT);
         arena.setStyle("-fx-background-color: #1a1a2e;");
 
-        crosshair = new Crosshair();
-        crosshair.setPosition(WIDTH / 2, HEIGHT / 2);
-        arena.getChildren().add(crosshair.getNode());
-
         HBox hud = buildHUD();
 
         StackPane root = new StackPane();
         root.getChildren().addAll(arena, hud);
         StackPane.setAlignment(hud, Pos.TOP_CENTER);
+
+        crosshair = new Crosshair();
+        crosshair.setPosition(WIDTH / 2, HEIGHT / 2);
+
+        Pane crosshairLayer = new Pane();
+        crosshairLayer.setPrefSize(WIDTH, HEIGHT);
+        crosshairLayer.setMouseTransparent(true);
+        crosshairLayer.getChildren().add(crosshair.getNode());
+
+        root.getChildren().add(1, crosshairLayer);
 
         Scene scene = new Scene(root, WIDTH, HEIGHT);
         scene.setCursor(Cursor.NONE);
