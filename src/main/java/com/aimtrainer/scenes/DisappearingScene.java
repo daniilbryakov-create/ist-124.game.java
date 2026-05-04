@@ -7,6 +7,7 @@ import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -16,6 +17,14 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
 import javafx.scene.shape.ArcType;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.Random;
 
 import com.aimtrainer.GameType;
@@ -51,6 +60,7 @@ public class DisappearingScene {
     private int spawned = 0;
     private boolean gameOver = false;
     private long gameStartNano;
+    private double elapsed = 0;
 
     private double mouseX = WIDTH / 2;
     private double mouseY = HEIGHT / 2;
@@ -73,7 +83,7 @@ public class DisappearingScene {
     public Scene buildScene() {
         arena = new Pane();
         arena.setPrefSize(WIDTH, HEIGHT);
-        arena.setStyle("-fx-background-color: #1a1a2e;");
+        arena.getStyleClass().add("arena");
 
         HBox hud = buildHUD();
 
@@ -185,8 +195,8 @@ public class DisappearingScene {
                         double ratio = 1.0 - (age / DISAPPEAR_T);
                         timerArc.setLength(360 * ratio);
                         // Цвет: зелёный → красный
-                        double r = Math.min(1.0, 2.0 * (1.0 - ratio));
-                        double g = Math.min(1.0, 2.0 * ratio);
+                        double r = Math.max(0.0, Math.min(1.0, 2.0 * (1.0 - ratio)));
+                        double g = Math.max(0.0, Math.min(1.0, 2.0 * ratio));
                         timerArc.setStroke(Color.color(r, g, 0));
                     }
 
@@ -214,16 +224,17 @@ public class DisappearingScene {
     private void handleClick(double x, double y) {
         if (currentTarget == null)
             return;
+
         if (currentTarget.isHit(x, y)) {
             score++;
             scoreLabel.setText("Score: " + score + "/" + TOTAL);
+
             removeTarget();
-            if (score >= TOTAL) {
-                endGame();
-                return;
-            }
+
             if (spawned < TOTAL)
                 spawnTarget();
+            else
+                endGame();
         }
     }
 
@@ -269,7 +280,7 @@ public class DisappearingScene {
     private void endGame() {
         gameOver = true;
         gameLoop.stop();
-        double elapsed = (System.nanoTime() - gameStartNano) / 1_000_000_000.0;
+        elapsed = (System.nanoTime() - gameStartNano) / 1_000_000_000.0;
 
         VBox box = new VBox(15);
         box.setAlignment(Pos.CENTER);
@@ -285,6 +296,9 @@ public class DisappearingScene {
         Label accLbl = new Label(String.format("Accuracy: %.0f%%", acc));
         accLbl.getStyleClass().add("result-score");
 
+        Button save = new Button("Save Score");
+        save.getStyleClass().add("menu-button");
+        save.setOnAction(e -> saveResult());
         Button again = new Button("Play Again");
         again.getStyleClass().add("menu-button");
         again.setOnAction(e -> restart());
@@ -292,7 +306,7 @@ public class DisappearingScene {
         menu.getStyleClass().add("menu-button");
         menu.setOnAction(e -> sceneManager.showMenu());
 
-        box.getChildren().addAll(title, scoreLbl, timeLbl, accLbl, again, menu);
+        box.getChildren().addAll(title, scoreLbl, timeLbl, accLbl, save, again, menu);
 
         StackPane overlay = new StackPane(box);
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.7);");
@@ -309,5 +323,63 @@ public class DisappearingScene {
         if (gameLoop != null)
             gameLoop.stop();
         sceneManager.startGame(GameType.DISAPPEARING);
+    }
+
+    /**
+     * Открывает диалоговое окно для сохранения рекорда с именем игрока.
+     * После ввода имени показывает результаты сохранённого рекорда.
+     */
+    private void saveResult() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Save Your Score");
+        dialog.setHeaderText("Enter your username");
+        dialog.setContentText("Username:");
+        dialog.getDialogPane().getStyleClass().add("dialog");
+
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(username -> {
+            if (!username.trim().isEmpty()) {
+                // Сохраняем в файл
+                saveScoreToFile(username.trim(), score, elapsed, spawned);
+            }
+        });
+    }
+
+    /**
+     * Сохраняет результат игры в файл DisappearingScores.txt.
+     * Формат: Username | Score | Total | Accuracy | Time | Date
+     * 
+     * @param username имя игрока
+     * @param score    количество правильных попаданий
+     * @param time     время прохождения в секундах
+     * @param total    общее количество мишеней
+     */
+    private void saveScoreToFile(String username, int score, double time, int total) {
+        String scoresFile = "DisappearingScores.txt";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String timestamp = LocalDateTime.now().format(formatter);
+        double accuracy = total > 0 ? (score * 100.0 / total) : 0;
+        String record = String.format("%s | Score: %d/%d (%.0f%%) | Time: %.2fs | %s",
+                username, score, total, accuracy, time, timestamp);
+
+        try {
+            // Проверяем, существует ли файл, чтобы добавить заголовок при первом создании
+            boolean fileExists = Files.exists(Paths.get(scoresFile));
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(scoresFile, true))) {
+                // Добавляем заголовок только если файл новый
+                if (!fileExists) {
+                    writer.println("=== AIM TRAINER - DISAPPEARING RECORDS ===");
+                    writer.println();
+                }
+                writer.println(record);
+                writer.flush();
+            }
+            System.out.println("Score saved successfully: " + record);
+        } catch (IOException e) {
+            System.err.println("Error saving score: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

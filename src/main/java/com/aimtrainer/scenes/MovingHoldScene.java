@@ -7,12 +7,21 @@ import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.Random;
 
 import com.aimtrainer.GameType;
@@ -47,6 +56,7 @@ public class MovingHoldScene {
     private boolean gameOver = false;
     private long gameStartNano;
     private long lastFrameNano;
+    private double elapsed = 0;
 
     private double mouseX = WIDTH / 2;
     private double mouseY = HEIGHT / 2;
@@ -71,7 +81,7 @@ public class MovingHoldScene {
     public Scene buildScene() {
         arena = new Pane();
         arena.setPrefSize(WIDTH, HEIGHT);
-        arena.setStyle("-fx-background-color: #1a1a2e;");
+        arena.getStyleClass().add("arena");
 
         HBox hud = buildHUD();
 
@@ -249,37 +259,28 @@ public class MovingHoldScene {
     }
 
     /**
-     * Завершает игру и показывает экран результатов.
-     * Вычисляет время прохождения и передаёт данные в showResult.
+     * Завершает игру, останавливает цикл и показывает экран результатов.
+     * Отображает время прохождения.
      */
     private void endGame() {
         gameOver = true;
         gameLoop.stop();
-        double elapsed = (System.nanoTime() - gameStartNano) / 1_000_000_000.0;
-        showResult(score, TOTAL, elapsed);
-    }
+        elapsed = (System.nanoTime() - gameStartNano) / 1_000_000_000.0;
 
-    /**
-     * Отображает экран результатов после окончания игры.
-     * Показывает финальный счёт, время прохождения и кнопки для повтора или
-     * возврата в меню.
-     * 
-     * @param sc      достигнутый счёт
-     * @param total   целевой счёт (обычно 20)
-     * @param elapsed время прохождения в секундах
-     */
-    private void showResult(int sc, int total, double elapsed) {
         VBox box = new VBox(15);
         box.setAlignment(Pos.CENTER);
         box.getStyleClass().add("result-box");
 
         Label title = new Label("ROUND OVER");
         title.getStyleClass().add("result-title");
-        Label scoreLbl = new Label("Score: " + sc + "/" + total);
+        Label scoreLbl = new Label("Score: " + score + "/" + TOTAL);
         scoreLbl.getStyleClass().add("result-score");
         Label timeLbl = new Label(String.format("Time: %.2fs", elapsed));
         timeLbl.getStyleClass().add("result-score");
 
+        Button save = new Button("Save Score");
+        save.getStyleClass().add("menu-button");
+        save.setOnAction(e -> saveResult());
         Button again = new Button("Play Again");
         again.getStyleClass().add("menu-button");
         again.setOnAction(e -> restart());
@@ -287,7 +288,7 @@ public class MovingHoldScene {
         menu.getStyleClass().add("menu-button");
         menu.setOnAction(e -> sceneManager.showMenu());
 
-        box.getChildren().addAll(title, scoreLbl, timeLbl, again, menu);
+        box.getChildren().addAll(title, scoreLbl, timeLbl, save, again, menu);
 
         StackPane overlay = new StackPane(box);
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.7);");
@@ -304,5 +305,50 @@ public class MovingHoldScene {
         if (gameLoop != null)
             gameLoop.stop();
         sceneManager.startGame(GameType.MOVING_HOLD);
+    }
+
+    private void saveResult() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Save Your Score");
+        dialog.setHeaderText("Enter your username");
+        dialog.setContentText("Username:");
+        dialog.getDialogPane().getStyleClass().add("dialog");
+
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(username -> {
+            if (!username.trim().isEmpty()) {
+                // Сохраняем в файл
+                saveScoreToFile(username.trim(), score, elapsed, TOTAL);
+            }
+        });
+    }
+
+    private void saveScoreToFile(String username, int score, double time, int total) {
+        String scoresFile = "MovingHoldScores.txt";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String timestamp = LocalDateTime.now().format(formatter);
+        double accuracy = total > 0 ? (score * 100.0 / total) : 0;
+        String record = String.format("%s | Score: %d/%d (%.0f%%) | Time: %.2fs | %s",
+                username, score, total, accuracy, time, timestamp);
+
+        try {
+            // Проверяем, существует ли файл, чтобы добавить заголовок при первом создании
+            boolean fileExists = Files.exists(Paths.get(scoresFile));
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(scoresFile, true))) {
+                // Добавляем заголовок только если файл новый
+                if (!fileExists) {
+                    writer.println("=== AIM TRAINER - MOVING HOLD RECORDS ===");
+                    writer.println();
+                }
+                writer.println(record);
+                writer.flush();
+            }
+            System.out.println("Score saved successfully: " + record);
+        } catch (IOException e) {
+            System.err.println("Error saving score: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

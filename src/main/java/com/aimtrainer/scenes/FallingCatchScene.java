@@ -7,14 +7,23 @@ import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import com.aimtrainer.GameType;
@@ -54,6 +63,7 @@ public class FallingCatchScene {
     private boolean gameOver = false;
     private long gameStartNano;
     private long lastSpawnNano;
+    private double elapsed = 0;
 
     private double mouseX = WIDTH / 2;
 
@@ -75,7 +85,7 @@ public class FallingCatchScene {
     public Scene buildScene() {
         arena = new Pane();
         arena.setPrefSize(WIDTH, HEIGHT);
-        arena.setStyle("-fx-background-color: #0d1b2a;");
+        arena.getStyleClass().add("arena");
 
         basket = new Crosshair.BasketCrosshair(WIDTH / 2, BASKET_Y);
         arena.getChildren().add(basket.getNode());
@@ -283,7 +293,7 @@ public class FallingCatchScene {
     private void endGame() {
         gameOver = true;
         gameLoop.stop();
-        double elapsed = (System.nanoTime() - gameStartNano) / 1_000_000_000.0;
+        elapsed = (System.nanoTime() - gameStartNano) / 1_000_000_000.0;
 
         VBox box = new VBox(15);
         box.setAlignment(Pos.CENTER);
@@ -299,6 +309,9 @@ public class FallingCatchScene {
         errLbl.getStyleClass().add("result-score");
         errLbl.setStyle("-fx-text-fill: #FF6B6B;");
 
+        Button save = new Button("Save Score");
+        save.getStyleClass().add("menu-button");
+        save.setOnAction(e -> saveResult());
         Button again = new Button("Play Again");
         again.getStyleClass().add("menu-button");
         again.setOnAction(e -> restart());
@@ -306,7 +319,7 @@ public class FallingCatchScene {
         menu.getStyleClass().add("menu-button");
         menu.setOnAction(e -> sceneManager.showMenu());
 
-        box.getChildren().addAll(title, scoreLbl, timeLbl, errLbl, again, menu);
+        box.getChildren().addAll(title, scoreLbl, timeLbl, errLbl, save, again, menu);
 
         StackPane overlay = new StackPane(box);
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.7);");
@@ -342,4 +355,62 @@ public class FallingCatchScene {
     private double clamp(double val, double min, double max) {
         return Math.max(min, Math.min(max, val));
     }
+
+    /**
+     * Открывает диалоговое окно для сохранения рекорда с именем игрока.
+     * После ввода имени показывает результаты сохранённого рекорда.
+     */
+    private void saveResult() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Save Your Score");
+        dialog.setHeaderText("Enter your username");
+        dialog.setContentText("Username:");
+        dialog.getDialogPane().getStyleClass().add("dialog");
+
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(username -> {
+            if (!username.trim().isEmpty()) {
+                // Сохраняем в файл
+                saveScoreToFile(username.trim(), score, elapsed, errors);
+            }
+        });
+    }
+
+    /**
+     * Сохраняет результат игры в файл scores.txt.
+     * Формат: Username | Score | Time | Errors | Date
+     * 
+     * @param username имя игрока
+     * @param score    количество пойманных шариков
+     * @param time     время прохождения в секундах
+     * @param errors   количество ошибок
+     */
+    private void saveScoreToFile(String username, int score, double time, int errors) {
+        String scoresFile = "FallingCatchScores.txt";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String timestamp = LocalDateTime.now().format(formatter);
+        String record = String.format("%s | Caught: %d | Time: %.2fs | Errors: %d/%d | %s",
+                username, score, time, errors, MAX_ERRORS, timestamp);
+
+        try {
+            // Проверяем, существует ли файл, чтобы добавить заголовок при первом создании
+            boolean fileExists = Files.exists(Paths.get(scoresFile));
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(scoresFile, true))) {
+                // Добавляем заголовок только если файл новый
+                if (!fileExists) {
+                    writer.println("=== AIM TRAINER - FALLING CATCH RECORDS ===");
+                    writer.println();
+                }
+                writer.println(record);
+                writer.flush();
+            }
+            System.out.println("Score saved successfully: " + record);
+        } catch (IOException e) {
+            System.err.println("Error saving score: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 }
